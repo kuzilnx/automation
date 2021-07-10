@@ -1,0 +1,40 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+$script= <<-SCRIPT
+sed -i s/SELINUX=enforcing/SELINUX=permissive/ /etc/selinux/config
+sudo apt-get install default-jdk
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+echo "deb https://pkg.jenkins.io/debian-stable binary/" > /etc/apt/sources.list.d/jenkins.list
+apt-get update
+apt-get install -y jenkins
+
+systemctl enable --now jenkins
+
+cat /var/lib/jenkins/secrets/initialAdminPassword
+
+su vagrant
+
+cd ~/.ssh
+
+ssh-keygen -t rsa -f private_key_for_jenkins
+
+cat private_key_for_jenkins > authorized_keys
+
+SCRIPT
+
+
+Vagrant.configure("2") do |config|
+
+  config.vm.define "j" do |j|
+	j.vm.box = "debian/stretch64"
+	j.vm.hostname = "jenkins-client"
+  	j.vm.network "private_network", ip: "172.32.10.10"
+  end
+  config.vm.define "jen" do |jen|
+	jen.vm.box = "debian/stretch64"
+	jen.vm.hostname = "jenkins-ci"
+  	jen.vm.network "private_network", ip: "172.32.10.10"
+	jen.vm.network "forwarded_port", guest: 8080, host: 8080
+  end
+end

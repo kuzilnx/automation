@@ -1,0 +1,87 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+FWD='
+$TTL 86400
+@    IN    SOA nameserver1.example.com root.example.com 10030  3600  1800  604800  86400
+@    IN    NS   nameserver1.example.com 
+nameserver1  IN    A   10.100.100.252
+mail         IN    A   10.100.100.251
+dns          IN    CNAME nameserver1.example.com
+@            IN    MX    10  mail.example.com
+'
+REV='
+$TTL 86400
+@     IN    SOA  nameserver1.example.com root.example.com 10030  3600  1800  604800  86400
+@     IN    NS   nameserver1.example.com 
+252   IN    PTR  nameserver1.example.com
+251   IN    PTR  mail.example.com 
+'
+
+
+
+
+$script = <<-SCRIPT
+echo "Starting Provisioning..."
+apt install -y bind bind-utils
+sleep 2 
+echo "nameserver 10.100.101.252" > /etc/resolv.conf
+sleep 1
+sed -i 
+sleep 1
+sed -i 's/listen-on port 53 { 127.0.0.1; }/listen-on port 53 { any; }/' /etc/named.conf
+sleep 1
+sed -i 's/listen-on-v6 port 53 { ::1; };//' /etc/named.conf
+sleep 1
+sed -i  's_allow-query     { localhost; };_ allow-query     { 10.100.100.0/24;localhost; };_' /etc/named.conf
+sleep 1
+sed -i  's/recursion yes/recursion no/' /etc/named.conf
+sleep 1
+echo 'zone "example.com" { type master; file "fwd.example.com.db";notify yes;};' >> /etc/named.conf 
+echo 'zone "100.100.10.in-addr.arpa" { type master; file "rev.example.com.db";};' >> /etc/named.conf 
+
+sleep 1
+echo FWD > /var/named/fwd.example.com.db
+echo '' > /var/named/rev.example.com.db
+
+systemctl enable --now named
+SCRIPT
+
+$script2 = <<-SCRIPT1
+echo "Starting Provisioning..."
+apt install -y postfix 
+sleep 2  
+echo "nameserver 10.100.101.252" > /etc/resolv.conf
+
+systemctl enable --now named
+SCRIPT1
+
+$script3 = <<-SCRIPT2
+echo "Starting Provisioning..."
+apt install -y postfix 
+sleep 2  
+echo "nameserver 10.100.101.252" > /etc/resolv.conf
+
+systemctl enable --now named
+SCRIPT2
+
+Vagrant.configure("2") do |config|
+  config.vm.define "dns" do |dns|
+    dns.vm.box="debian/buster64"
+    dns.vm.hostname="dns"
+    dns.vm.network "private_network", ip: "10.100.100.252"
+    dns.vm.provision "shell", inline: $script
+  end
+
+  config.vm.define "e" do |e|
+    e.vm.box="debian/buster64"
+    e.vm.hostname="email-server"
+    e.vm.network "private_network", ip: "10.100.100.251"
+    dnsc.vm.provision "shell", inline: $script2
+  end
+
+  config.vm.define "ec" do |ec|
+    ec.vm.box="debian/buster64"
+    ec.vm.hostname="email-client"
+    ec.vm.network "private_network", ip: "10.100.100.22"
+  end
+end

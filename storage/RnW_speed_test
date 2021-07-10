@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+bid=$$
+sudo cat /root/.bashrc > /dev/null 2>&1
+for i in 1 2 3; do
+file="/tmp/stdout.$bid.$i"
+echo "write"
+sync; 
+res=$(dd if=/dev/zero of=tempfile bs=1M count=1024 2> $file; cat $file | grep 'bytes')
+echo $res > $file
+newres=$(cat $file)
+echo "write: $i $newres" >> test_results
+sync
+
+echo "read seq"
+res=$(dd if=tempfile of=/dev/null bs=1M count=1024 2> $file; cat $file | grep 'bytes')
+echo $res > $file
+newres=$(cat $file)
+echo "read: $i $newres" >> test_results
+sync
+
+echo "read random"
+sudo /sbin/sysctl -w vm.drop_caches=3
+res=$(dd if=tempfile of=/dev/null bs=1M count=102 2> $file; cat $file | grep 'bytes')
+echo $res > $file
+newres=$(cat $file)
+echo "read seq: $i $newres" >> test_results
+sync
+
+echo "done"
+done
+rm tempfile
+
+y=3
+w="write"
+r="read"
+rs="read seq"
+for i in test_results test_results_nfs; do
+x=$(cat $i | grep write | cut -d "," -f4 | awk '{print $1}' | paste -sd+ | bc)
+var=$(calc $x/$y)
+echo "$i test $w speed average is $var GB/s"
+x=$(cat $i | grep 'read seq'| cut -d "," -f4 | awk '{print $1}' | paste -sd+ | bc)
+var=$(calc $x/$y)
+echo "$i test $rs speed average is $var GB/s"
+#while IFS= read -r line; do echo $line; done
+x=$(cat $i | grep read: | cut -d "," -f4 | awk '{print $1}' | paste -sd+ | bc)
+var=$(calc $x/$y)
+echo "$i test $r speed average is $var GB/s"
+done

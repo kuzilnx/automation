@@ -1,0 +1,14 @@
+---
+# defaults file for web
+
+SERVER_PORT: 80
+
+tools:
+  - epel-release
+  - httpd
+  - python3
+  - mod_wsgi
+  - git
+  - python-setuptools.noarch
+  - python-virtualenv.noarch
+  - python36-virtualenv.noarch

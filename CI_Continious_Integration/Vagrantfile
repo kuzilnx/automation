@@ -1,0 +1,74 @@
+
+$script=<<-SCRIPT
+echo "starting automation provision"
+
+SCRIPT
+
+$script2=<<-SCRIPT
+echo "starting jenkins provision"
+sed -i s/SELINUX=enforcing/SELINUX=permissive/ /etc/selinux/config
+sudo apt-get install default-jdk
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+echo "deb https://pkg.jenkins.io/debian-stable binary/" > /etc/apt/sources.list.d/jenkins.list
+apt-get update
+apt-get install -y jenkins
+
+systemctl enable --now jenkins
+
+cat /var/lib/jenkins/secrets/initialAdminPassword
+
+su vagrant
+
+cd ~/.ssh
+
+ssh-keygen -t rsa -f private_key_for_jenkins
+
+cat private_key_for_jenkins > authorized_keys
+
+SCRIPT
+
+echo "done "
+SCRIPT
+
+$web_script=<<-SCRIPT
+echo "starting provision"
+
+
+SCRIPT
+
+$db_script=<<-SCRIPT
+echo "starting provision"
+
+
+SCRIPT
+
+Vagrant.configure("2") do |config|
+  config.vm.define "ans" do |ans|
+    ans.vm.box="debian/buster64"
+    ans.vm.hostname="ansible"
+    ans.vm.network "private_network", ip: "10.0.50.100"
+    ans.vm.synced_folder "./provision", "/home/vagrant/provsion"
+  end
+
+  config.vm.define "ci" do |ci|
+    ci.vm.box="debian/buster64"
+    ci.vm.hostname="Jenkins"
+    ci.vm.network "private_network", ip: "10.0.50.101"
+    ci.vm.network "forwarded_port", guest: 8080, host: 8080
+    ci.vm.provision "shell", inline: $script2
+  end
+
+  config.vm.define "web" do |web|
+     web.vm.box="debian/buster64"
+     web.vm.hostname="web"
+     web.vm.network "private_network", ip: "10.0.50.102"
+     web.vm.provision "shell", inline: $web_script
+   end
+
+   config.vm.define "db" do |db|
+      db.vm.box="debian/buster64"
+      db.vm.hostname="db"
+      db.vm.network "private_network", ip: "10.0.50.103"
+      db.vm.provision "shell", inline: $db_script
+    end
+end

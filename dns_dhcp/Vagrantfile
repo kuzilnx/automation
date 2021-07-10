@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+$script = <<-SCRIPT
+echo "Starting Provisioning..."
+apt install -y bind bind-utils dhcp
+SCRIPT
+
+$script2 = <<-SCRIPT
+echo "Starting Provisioning..."
+apt install -y dhclient bind-utils
+SCRIPT
+
+Vagrant.configure("2") do |config|
+   config.vm.define "dns" do |dns|
+      dns.vm.box="debian/buster64"
+      dns.vm.hostname="dnsdhcpsrv"
+      dns.vm.network "private_network", ip: "10.0.10.100"
+      dns.vm.provision "shell", inline: $script
+    end
+
+    config.vm.define "dnsc" do |dnsc|
+      dnsc.vm.box="debian/buster64"
+      dnsc.vm.hostname="dnsclient"
+      dnsc.vm.network "private_network", ip: "10.0.10.101"
+      dnsc.vm.provision "shell", inline: $script2
+    end
+end

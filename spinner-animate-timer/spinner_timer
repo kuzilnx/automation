@@ -1,0 +1,30 @@
+spinner() {
+    local i sp n
+    sp='/-\|'
+    n=${#sp}
+    printf ' '
+    while sleep 0.1; do
+        printf "%s\b" "${sp:i++%n:1}"
+    done
+}
+counter() {
+    local n sp j
+    j=$(( $1 + 1 )) # // sleep time +1 for sleep time countdown (j--)
+    n=$1 # // sleep time
+    sp=(echo $(x="$n";y=5; for ((i=x; i>=y; i-=y)); do echo $i; done)) # // range with step
+    printf ' '
+    while sleep 1; do
+    	let j--
+	[[ "${sp[@]}" =~ "${j}"  ]] && printf "$j" || printf '.' 
+    done
+}
+
+spinner &
+spinner_pid=$!
+printf "\n"
+counter 30 &
+counter_pid=$!
+sleep 31  # sleeping for important work
+kill $spinner_pid &>/dev/null # kill the spinner
+kill $counter_pid &>/dev/null # kill the counter
+printf '\n'

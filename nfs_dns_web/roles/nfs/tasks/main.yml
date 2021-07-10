@@ -1,0 +1,73 @@
+---
+# tasks file for nfs
+- name: disable SELinux
+  selinux: state=disabled
+
+- name: installing needed software
+  yum: 
+    name: "{{ item }}"
+    state: present
+  loop: "{{ tools }}"
+
+- name: making paritions of lvm for pv  
+  parted:
+    device: "{{ item }}"
+    number: 1
+    flags: [ lvm ]
+    state: present
+    part_end: "100%"
+  loop: "{{ disks }}"
+
+- name: Create nfs_vg volume group 
+  lvg:
+    vg: nfs_vg
+    pvs: /dev/sdb1,/dev/sdc1,/dev/sdd1
+
+- name: Create nfs_lv0 logical volume
+  lvol:
+    vg: nfs_vg
+    lv: nfs_lv0
+    size: 4g
+
+- name: Creare filesystem on logical volume
+  filesystem:
+    fstype: ext4
+    dev: /dev/nfs_vg/nfs_lv0
+
+- name: Setup mount folder
+  file:
+    path: /mnt/nfs_share
+    state: directory
+    mode: 0775
+
+- name: mount the NFS Share
+  mount:
+    path: /mnt/nfs_share
+    src: /dev/nfs_vg/nfs_lv0
+    fstype: ext4
+    state: mounted
+
+
+- name: enable nfs services
+  service:
+    name: "{{ item }}"
+    enabled: yes
+  loop: "{{ services }}"
+
+
+- name: Copy NFS exports config file.
+  template:
+    src:  exports.j2
+    dest: /etc/exports
+    owner: root
+    group: root
+    mode: 0644
+
+- name: NFS apply change configrue
+  shell: systemctl reload nfs; exportfs -a; systemctl restart nfs
+
+- name: configuring dns client
+  lineinfile:
+    path: /etc/resolv.conf
+    regexp: ^nameserver\s+[0-9]{3}\.[0-9]{3}\.[0-9]{3}\.[0-9]{3}
+    line: nameserver 10.101.102.0

@@ -1,0 +1,21 @@
+$TTL 86400
+@   IN  SOA     ns1.class.lan. root.class.lan. (
+        ; any numerical values are OK for serial number but
+        ; recommendation is [YYYYMMDDnn] (update date + number)
+        2021042301  ;Serial
+        3600        ;Refresh
+        1800        ;Retry
+        604800      ;Expire
+        86400       ;Minimum TTL
+)
+        ; define Name Server's IP address
+        IN  A       10.101.102.10
+        ; define Name Server
+        IN  NS      ns1.class.lan.
+        ; define Mail Exchanger Server
+        IN  MX 10   mail.class.lan.
+
+; define each IP address of a hostname
+nfs     IN  A       10.101.102.20
+web     IN  A       10.101.102.30
+dummy   IN  A       10.101.102.100

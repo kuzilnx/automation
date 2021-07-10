@@ -1,0 +1,23 @@
+#!/bin/bash
+RTIP="192.168.1.1"
+PIIP="192.168.1.2"
+sftab(){
+[[ "$1" -eq "1" ]] && sudo mount.cifs -o credentials=/root/.rt-creds,vers=1.0,uid=1000,gid=1000 //${RTIP}/new /mnt/share/rt-smb > /dev/null 2>&1
+[[ "$1" -eq "2" ]] && sudo mount.nfs4 ${PIIP}:/srv/exports /mnt/share/nfs > /dev/null 2>&1
+sleep 1
+ismnt=$(mount | grep "nfs4")
+[[ $? -eq 0 ]] && sudo mount --bind /home/shai/Projects /mnt/share/nfs/Projects/lptp > /dev/null 2>&1
+exit 0
+}
+isalive(){
+res=$(ping -c 1 -W 0.5 $1 | grep statistics -A1 | awk -F"," '{print $2}' | cut -d" " -f2 | tr -d "\n")
+# get packet rcvd ; expct 1
+[[ "$res" -eq "1" ]] && sftab "${1: -1}" || logger "$1 is dead" && exit 155 > /dev/null 2>&1
+			# trim IP addrs last char ; sftab func $1 eq xxx.xxx.x.1/2 
+}
+# check if mounted. expct exit status not 0
+ismnt=$(mount | grep "rt-smb")
+[[ $? -ne 0 ]] && isalive "${RTIP}"
+ismnt=$(mount | grep "nfs4")
+[[ $? -ne 0 ]] && isalive "${PIIP}"
+exit 0

@@ -1,0 +1,74 @@
+##########################################################################
+#  __ _| |_| |_ ___ _ __ | |_(_) ___  _ __ | |
+# / _` | __| __/ _ \ '_ \| __| |/ _ \| '_ \| |
+#| (_| | |_| ||  __/ | | | |_| | (_) | | | |_|
+# \__,_|\__|\__\___|_| |_|\__|_|\___/|_| |_(_)
+#
+# You need to run `export VAGRANT_EXPERIMENTAL="disks"` in order for this LAB to work
+########################################################################## 											
+
+Vagrant.configure("2") do |config|
+	config.vm.define :dns do |dns|
+	 dns.vm.box = 'centos/7'
+	 dns.vm.hostname = 'dns-host'
+	 dns.vm.network "private_network", ip: '10.101.102.10'
+	 dns.vm.provision :ansible do |ansible|
+		ansible.playbook = "roles/playbook.yaml"
+		ansible.verbose = true
+		# ansible.groups = {
+        #         "dns" => ["dns group"]
+        #     }
+		# 	ansible.extra_vars = {
+        #         node_ip: "10.101.102.10",
+        #         node_name: "dns",
+        #         pod_network: "10.101.102.0/24"
+        #     }
+	   end
+	end
+
+	config.vm.define :nfs do |nfs|
+	 nfs.vm.box = 'centos/7'
+	 nfs.vm.hostname = 'nfs-host'
+	 nfs.vm.network "private_network", ip: '10.101.102.20'
+	 nfs.vm.provider :virtualbox
+	 (0..2).each do |i|
+		nfs.vm.disk :disk, size: "2GB", name: "disk-#{i}"
+
+	  end
+
+	 nfs.vm.provision  :ansible do |ansible|
+		ansible.playbook = "roles/playbook.yaml"
+		ansible.verbose = true
+		# ansible.groups = {
+        #         "nfs" => ["nfs group"]
+        #     }
+		# 	ansible.extra_vars = {
+        #         node_ip: "10.101.102.20",
+        #         node_name: "dns",
+        #         pod_network: "10.101.102.0/24"
+        #     }
+	 	
+	   end
+	end
+
+	config.vm.define :web do |web|
+	 web.vm.box = 'centos/7'
+	 web.vm.hostname = 'web-host'
+	 web.vm.network "private_network", ip: '10.101.102.30'
+	 web.vm.network "forwarded_port", host: 8080, guest: 80
+	 web.vm.provision  :ansible do |ansible|
+		ansible.playbook = "roles/playbook.yaml"
+		ansible.verbose = true
+	# 	ansible.groups = {
+    #             "web" => ["web group"]
+    #         }
+	# 		ansible.extra_vars = {
+    #             node_ip: "10.101.102.30",
+    #             node_name: "dns",
+    #             pod_network: "10.101.102.0/24"
+    #         }
+	
+	 end
+
+end
+end

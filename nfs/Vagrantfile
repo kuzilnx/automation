@@ -1,0 +1,43 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+$script = <<-SCRIPT
+echo "Starting Provisioning..."
+apt install -y nfs-utils
+echo "/home 10.0.0.0/24(rw,no_root_squash)" > /etc/exports
+systemctl enable --now rpcbind nfs-server
+SCRIPT
+
+$script2 = <<-SCRIPT
+echo "Starting Provisioning..."
+apt install -y nfs-utils
+systemctl enable --now rpcbind
+SCRIPT
+
+Vagrant.configure("2") do |config|
+
+   config.vm.define "nfs3" do |nfs3|
+      nfs3.vm.box="debian/buster64"
+      nfs3.vm.hostname="nfsresource"
+      nfs3.vm.network "private_network", ip: "10.0.40.32"
+      nfs3.vm.provision "shell", inline: $script
+    end
+
+   config.vm.define "nfs2" do |nfs2|
+      nfs2.vm.box="debian/buster64"
+      nfs2.vm.hostname="nfsresource"
+      nfs2.vm.network "private_network", ip: "10.0.40.31"
+      nfs2.vm.provision "shell", inline: $script
+    end
+
+    config.vm.define "nfs" do |nfs|
+      nfs.vm.box="debian/buster64"
+      nfs.vm.hostname="nfswww"
+      nfs.vm.network "private_network", ip: "10.0.40.30"
+      nfs.vm.provision "shell", inline: $script2
+    end
+end

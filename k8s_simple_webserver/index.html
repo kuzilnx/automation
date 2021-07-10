@@ -1,0 +1,23 @@
+<html>
+	<head>
+		<title>Question No.1</title>
+	</head>
+	<body>
+		<p id="date"> &nbsp; </p>
+	</body>
+<script type="text/javascript"> 
+function addZero(obj){ return obj < 10 ? '0' + obj : obj }
+function presentDate(){
+	var dateObj = new Date();
+	var m = addZero(dateObj.getMonth() + 1 );
+	var d = addZero(dateObj.getDate());
+	var y = dateObj.getFullYear();
+
+    theDate = d + "/" + m + "/" + y;
+
+	document.getElementById("date").innerHTML = theDate;
+}
+presentDate();
+</script>
+</html>
+

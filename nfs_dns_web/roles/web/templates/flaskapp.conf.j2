@@ -1,0 +1,14 @@
+<VirtualHost *:{{ SERVER_PORT }}>
+		ServerName web.labs
+		ServerAdmin vagrant@web.labs
+		DocumentRoot /var/www/html/flask
+		WSGIScriptAlias / /var/www/html/flask/flaskapp.wsgi
+		WSGIPythonPath	/var/www/html/flask:/var/www/html/flask/lib
+		<Directory /var/www/html/flask>
+			Order allow,deny
+			Allow from all
+		</Directory>
+		ErrorLog logs/error_flask.log
+		LogLevel warn
+		CustomLog logs/access_flask.log combined
+</VirtualHost>

@@ -1,0 +1,49 @@
+---
+# tasks file for dns
+
+- name: Disable SELinux
+  selinux: state=disabled
+
+- name: Installing DNS software
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: Configuring DNS to listen on interfaces
+  replace:
+    path: /etc/named.conf
+    regexp: '^\s+listen-on\sport\s53\s{ 127.0.0.1; };'
+    replace: listen-on port 53 {  any; };
+
+- name: Configuring DNS to allow query on 10.101.102.0/24 network
+  replace:
+    path: /etc/named.conf
+    regexp: '^\s+allow-query\s+{ localhost; };'
+    replace: 'allow-query  { localhost; 10.101.102.0/24; };'
+
+- name: Configuring DNS to  allow query transfer to network
+  replace:
+    path: /etc/named.conf
+    regexp: '^\s+allow-transfer\s+{ localhost; };'
+    replace: allow-transfer   { localhost; 10.101.102.0/24; };
+
+- name: Configure DNS to disable caching
+  replace:
+    path: /etc/named.conf
+    regexp: '^\s+recursion yes;'
+    replace: 'recursion no;'
+
+- name: Configre DNS with zone
+  lineinfile:
+    path: /etc/named.conf
+    insertafter: '^include "/etc/named.root.key";'
+    line: zone "class.lan" IN { type master; file "fwd.class.lan"; allow-update { none; }; };
+
+
+- name: Insert Zone file for DNS
+  template:
+    src: fwd.class.lan.j2
+    dest: /var/named/fwd.class.lan
+    owner: named
+    group: named

@@ -1,0 +1,75 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+
+
+$web_script = <<-SCRIPT
+echo "starting ansible provisioning"
+
+
+SCRIPT
+
+Vagrant.configure("2") do |config|
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.memory = 1024
+    libvirt.cpu_mode = "host-model"
+    libvirt.qemu_use_session = false
+    libvirt.random :model => 'random'
+  end
+  config.vm.define "ans" do |ans|
+     ans.vm.box="generic/centos7"
+     ans.vm.hostname="ansible"
+   #  ans.vm.network "private_network", ip: '192.168.100.101'
+#     ans.vm.network :private_network, :ip => "172.28.128.101", :mac => "525400423d57"
+   end
+
+  config.vm.define "web" do |web|
+     web.vm.box="generic/centos7"
+     web.vm.hostname="web"
+  #   web.vm.network "private_network", ip: '192.168.100.102'
+ #    web.vm.network :private_network, :ip => "172.28.128.102", :mac => "5254005aae3e"
+  end
+end
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  config.vm.box = "centos/7"
+  hostnames = ['ans','web']
+    hostnames.each do |name|
+     config.vm.define "#{name}" do |system|
+      system.vm.host_name = "#{name}"
+     end
+    end
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.memory = 1024
+    libvirt.cpu_mode = "host-model"
+    libvirt.qemu_use_session = false
+    libvirt.random :model => 'random'
+  end
+  config.vm.define :ans do |ans|
+     ans.vm.network :private_network,
+                      :libvirt__network_name => 'ansible_mgmt',
+                      :libvirt__dhcp_enabled => false,
+                      :ip => "192.168.111.10"
+     ans.vm.provision "shell", path: "provision.sh"
+     ans.vm.provision "shell", privileged: false, path: "provision-user.sh"
+  end
+
+  config.vm.define :web do |web|
+     web.vm.network :private_network,
+                       :libvirt__network_name => 'ansible_mgmt',
+                       :libvirt__dhcp_enabled => false,
+                       :ip => "192.168.111.11"
+     web.vm.provision "shell", path: "provision.sh"
+     web.vm.provision "shell", privileged: false, path: "provision-user.sh"
+  end
+end

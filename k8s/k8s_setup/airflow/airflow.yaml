@@ -1,0 +1,437 @@
+---
+# Source: airflow/templates/config/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: RELEASE-NAME-airflow
+  labels:
+    app.kubernetes.io/name: airflow
+    helm.sh/chart: airflow-9.0.2
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  airflow-password: "ZFh2a3A1UFA2Mw=="
+  
+  airflow-fernetKey: "Y0U1TlN6ZElWamh4UjAxbldFbEZVR2RVTWxVelIwSnJNa3BzV1hkWlNXWT0="
+---
+# Source: airflow/templates/web/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: RELEASE-NAME-airflow
+  labels:
+    app.kubernetes.io/name: airflow
+    helm.sh/chart: airflow-9.0.2
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      nodePort: null
+      targetPort: http
+  selector:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/component: web
+---
+# Source: airflow/templates/worker/service-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: RELEASE-NAME-airflow-worker-headless
+  labels:
+    app.kubernetes.io/name: airflow
+    helm.sh/chart: airflow-9.0.2
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: worker
+      port: 8793
+      targetPort: worker
+  selector:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/component: worker
+---
+# Source: airflow/templates/scheduler/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: RELEASE-NAME-airflow-scheduler
+  labels:
+    app.kubernetes.io/name: airflow
+    helm.sh/chart: airflow-9.0.2
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: scheduler
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: airflow
+      app.kubernetes.io/instance: RELEASE-NAME
+      app.kubernetes.io/component: scheduler
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: airflow
+        helm.sh/chart: airflow-9.0.2
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: scheduler
+      annotations:
+        checksum/configmap: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+    spec:
+      
+      priorityClassName: ""
+      securityContext:
+        fsGroup: 1001
+      serviceAccountName: default
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: airflow
+                    app.kubernetes.io/instance: RELEASE-NAME
+                    app.kubernetes.io/component: scheduler
+                namespaces:
+                  - "otomato"
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+          
+      initContainers:
+        
+      containers:
+        
+        - name: airflow-scheduler
+          image: "docker.io/bitnami/airflow-scheduler:2.0.1-debian-10-r53"
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsUser: 1001
+          env:
+            - name: AIRFLOW_EXECUTOR
+              value: CeleryExecutor
+            - name: AIRFLOW_FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: RELEASE-NAME-airflow
+                  key: airflow-fernetKey
+            - name: AIRFLOW_LOAD_EXAMPLES
+              value: "no"
+            - name: AIRFLOW_DATABASE_NAME
+              value: "bitnami_airflow"
+            - name: AIRFLOW_DATABASE_USERNAME
+              value: "bn_airflow"
+            - name: AIRFLOW_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: all-my-secrets
+                  key: postgresql-password
+            - name: AIRFLOW_DATABASE_HOST
+              value: "postgresql"
+            - name: AIRFLOW_DATABASE_PORT_NUMBER
+              value: "5432"
+            
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT_NUMBER
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: all-my-secrets
+                  key: redis-password
+            
+            - name: AIRFLOW_WEBSERVER_HOST
+              value: RELEASE-NAME-airflow
+            - name: AIRFLOW_WEBSERVER_PORT_NUMBER
+              value: "8080"
+          envFrom:
+          ports:
+            - name: task-logs
+              containerPort: 8793
+          volumeMounts:
+            
+          resources:
+            limits: {}
+            requests: {}
+      volumes:
+---
+# Source: airflow/templates/web/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: RELEASE-NAME-airflow-web
+  labels:
+    app.kubernetes.io/name: airflow
+    helm.sh/chart: airflow-9.0.2
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: web
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: airflow
+      app.kubernetes.io/instance: RELEASE-NAME
+      app.kubernetes.io/component: web
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: airflow
+        helm.sh/chart: airflow-9.0.2
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: web
+      annotations:
+        checksum/configmap: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+    spec:
+      
+      priorityClassName: ""
+      securityContext:
+        fsGroup: 1001
+      serviceAccountName: default
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: airflow
+                    app.kubernetes.io/instance: RELEASE-NAME
+                    app.kubernetes.io/component: web
+                namespaces:
+                  - "otomato"
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+          
+      initContainers:
+        
+      containers:
+        
+        - name: airflow-web
+          image: docker.io/bitnami/airflow:2.0.1-debian-10-r51
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsUser: 1001
+          env:
+            - name: AIRFLOW_EXECUTOR
+              value: CeleryExecutor
+            - name: AIRFLOW_FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: RELEASE-NAME-airflow
+                  key: airflow-fernetKey
+            - name: AIRFLOW_LOAD_EXAMPLES
+              value: "no"
+            - name: AIRFLOW_DATABASE_NAME
+              value: "bitnami_airflow"
+            - name: AIRFLOW_DATABASE_USERNAME
+              value: "bn_airflow"
+            - name: AIRFLOW_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: all-my-secrets
+                  key: postgresql-password
+            - name: AIRFLOW_DATABASE_HOST
+              value: "postgresql"
+            - name: AIRFLOW_DATABASE_PORT_NUMBER
+              value: "5432"
+            
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT_NUMBER
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: all-my-secrets
+                  key: redis-password
+            
+            - name: AIRFLOW_WEBSERVER_HOST
+              value: '0.0.0.0'
+            - name: AIRFLOW_WEBSERVER_PORT_NUMBER
+              value: "8080"
+            - name: AIRFLOW_USERNAME
+              value: user
+            - name: AIRFLOW_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: RELEASE-NAME-airflow
+                  key: airflow-password
+            - name: AIRFLOW_BASE_URL
+              value: http://127.0.0.1:8080
+            - name: AIRFLOW_LDAP_ENABLE
+              value: "no"
+          envFrom:
+          ports:
+            - name: http
+              containerPort: 8080
+          livenessProbe:
+            tcpSocket:
+              port: http
+            
+            failureThreshold: 6
+            initialDelaySeconds: 180
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: http
+            
+            failureThreshold: 6
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          volumeMounts:
+            
+          resources:
+            limits: {}
+            requests: {}
+      volumes:
+---
+# Source: airflow/templates/worker/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: RELEASE-NAME-airflow-worker
+  labels:
+    app.kubernetes.io/name: airflow
+    helm.sh/chart: airflow-9.0.2
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: worker
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: airflow
+      app.kubernetes.io/instance: RELEASE-NAME
+      app.kubernetes.io/component: worker
+  serviceName: RELEASE-NAME-airflow-worker-headless
+  replicas: 1
+  updateStrategy:
+    type: "RollingUpdate"
+  template:
+    metadata:
+      annotations:
+        checksum/configmap: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+      labels:
+        app.kubernetes.io/name: airflow
+        helm.sh/chart: airflow-9.0.2
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: worker
+    spec:
+      
+      priorityClassName: ""
+      securityContext:
+        fsGroup: 1001
+      serviceAccountName: default
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: airflow
+                    app.kubernetes.io/instance: RELEASE-NAME
+                    app.kubernetes.io/component: worker
+                namespaces:
+                  - "otomato"
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+          
+      initContainers:
+        
+      containers:
+        
+        - name: airflow-worker
+          image: docker.io/bitnami/airflow-worker:2.0.1-debian-10-r52
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsUser: 1001
+          resources:
+            limits: {}
+            requests: {}
+          env:
+            - name: AIRFLOW_EXECUTOR
+              value: CeleryExecutor
+            - name: AIRFLOW_FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: RELEASE-NAME-airflow
+                  key: airflow-fernetKey
+            - name: AIRFLOW_LOAD_EXAMPLES
+              value: "no"
+            - name: AIRFLOW_DATABASE_NAME
+              value: "bitnami_airflow"
+            - name: AIRFLOW_DATABASE_USERNAME
+              value: "bn_airflow"
+            - name: AIRFLOW_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: all-my-secrets
+                  key: postgresql-password
+            - name: AIRFLOW_DATABASE_HOST
+              value: "postgresql"
+            - name: AIRFLOW_DATABASE_PORT_NUMBER
+              value: "5432"
+            
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT_NUMBER
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: all-my-secrets
+                  key: redis-password
+            - name: AIRFLOW_WEBSERVER_HOST
+              value: RELEASE-NAME-airflow
+            - name: AIRFLOW_WEBSERVER_PORT_NUMBER
+              value: "8080"
+          envFrom:
+          ports:
+            - name: worker
+              containerPort: 8793
+          livenessProbe:
+            tcpSocket:
+              port: worker
+            
+            failureThreshold: 6
+            initialDelaySeconds: 180
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: worker
+            
+            failureThreshold: 6
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          volumeMounts:
+            
+      volumes:

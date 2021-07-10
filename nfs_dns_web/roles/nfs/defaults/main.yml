@@ -1,0 +1,15 @@
+---
+# vars file for nfs
+disks:
+  - /dev/sdb
+  - /dev/sdc
+  - /dev/sdd
+
+services:
+  - rpcbind
+  - nfslock
+  - nfs
+
+tools:
+  - nfs-utils
+  - lvm2

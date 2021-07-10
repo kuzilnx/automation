@@ -1,0 +1,64 @@
+---
+# tasks file for web
+
+- name: Disable SELinux
+  selinux: state=disabled
+
+- name: Creating folder
+  file:
+    path: /var/www/html/flask_app
+    state: directory
+    mode: 0777
+
+- name: Create folder for flaskapp deployment
+  mount : 
+    src: 10.101.102.20:/mnt/nfs_share
+    path: /var/www/html/flask_app
+    opts: rw,sync
+    state: mounted
+    fstype: nfs
+
+- name: Install webserver and tools
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ tools }}"
+
+- name: Enable webserver permanently
+  systemd:
+    name: httpd
+    enabled: yes
+    state: started
+
+- name: Creating wsgi.conf file
+  template: 
+    src: FlaskApp.conf.j2 
+    dest: "/etc/httpd/conf.d/FlaskApp.conf" 
+    owner: root 
+    group: root 
+    mode: 0740
+  notify: restart httpd
+
+- name: Clone flask application from gitlab
+  git:
+    repo: https://gitlab.com/silent-mobius/flask-example.git
+    dest: /var/www/html/flask_app
+
+- name: Installing requirements 
+  pip:
+      requirements: /var/www/html/flask/app/requirements.txt
+      virtualenv: /var/www/html/flask 
+      virtualenv_command: virtualenv-3
+      virtualenv_site_packages: yes
+
+- name: Creating flaskapp.wsgi file
+  template: 
+    src: flask.wsgi.j2 
+    dest: /var/www/html/flask/flaskapp.wsgi
+  notify: restart httpd
+
+- name: configuring dns client
+  lineinfile:
+    path: /etc/resolv.conf
+    regexp: ^nameserver\s+[0-9]{3}\.[0-9]{3}\.[0-9]{3}\.[0-9]{3}
+    line: nameserver 10.101.102.0

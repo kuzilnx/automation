@@ -1,0 +1,13 @@
+#!/bin/bash
+
+main(){
+logger sourced sh script
+sleep 15
+logger nomore sleeping
+xset s off
+xset dpms 0 0 0
+xset -dpms s off
+logger finished setting mPID $!
+exit 0
+}
+main

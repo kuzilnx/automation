@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+
+mmcOLDp1="/dev/sdb1"
+mmcOLDp2="/dev/sdb2"
+#mmcOLDp3="/dev/sdb3"
+mmcNEWp1="/dev/sdc1"
+ssdP3="/dev/sda3"
+vardate="$(date +%d%m%y)"
+mount_point="/tmp/${vardate}mnt"
+mkdirs(){
+   mkdir -p $mount_point/{mmcOLDp1,mmcOLDp2,mmcNEWp1,ssdP3} # // mk dirs for old and new
+# //                 mcb1 / mcb2                nmcb1/2                      np3
+# //            old mmc boot par1/2    new mmc boot par 1/2       ssd par 3
+# //                                               cheap mmc for boot
+}
+rmdirs(){
+   rm -rf $mount_point
+}
+mountdev(){
+mount $mmcOLDp1 $mount_point/mmcOLDp1
+mount $mmcOLDp2 $mount_point/mmcOLDp2
+mount $mmcNEWp1 $mount_point/mmcNEWp1
+mount $ssdP3    $mount_point/ssdP3
+}
+umountdev(){
+umount $mmcOLDp1
+umount $mmcOLDp2
+umount $mmcNEWp1
+umount $ssdP3
+}
+getinfo(){
+mkdir -p $mount_point/mmcOLDp2
+mount $mmcOLDp2 $mount_point/mmcOLDp2
+fstab_f1="$(cat $mount_point/mmcOLDp2/etc/fstab | awk '{print $1}')"
+umount $mmcOLDp2
+rmdir $mount_point/mmcOLDp2
+[[ "$fstab_f1" =~ "UUID" ]] && varblkid="UUID"
+[[ "$fstab_f1" =~ "LABEL" ]] && varblkid="LABEL"
+mmcOLDp1_id="$(blkid $mmcOLDp1 -o value -s $varblkid)"
+mmcOLDp2_id="$(blkid $mmcOLDp2 -o value -s $varblkid)"
+mmcOLDp1_type="$(blkid $mmcOLDp1 -o value -s TYPE)"
+mmcOLDp1_uuid="$(blkid $mmcOLDp1 -o value -s UUID)"
+mmcOLDp2_uuid="$(blkid $mmcOLDp2 -o value -s UUID)"
+mmcOLD_id="$(blkid $mmcOLDp1 -o value -s PARTUUID | awk -F '-' '{print $1}')"
+mmcOLDp1_fdisk_type="$(fdisk -l ${mmcOLDp1:0:-1} | grep Id -A1 | tail -n 1 | awk '{print $7}')"
+mmcOLDp2_fdisk_end_sector="$(fdisk -l ${mmcOLDp1:0:-1} | grep End -A1 | tail -n 1 | awk '{print $4}')"
+echo -n "
+varblkid $varblkid
+mmcOLDp1_id $mmcOLDp1_id
+mmcOLDp2_id $mmcOLDp2_id
+mmcOLDp1_type $mmcOLDp1_type
+mmcOLDp1_uuid $mmcOLDp1_uuid
+mmcOLDp2_uuid $mmcOLDp2_uuid
+mmcOLD_id $mmcOLD_id
+mmcOLDp1_fdisk_type $mmcOLDp1_fdisk_type
+mmcOLDp2_fdisk_end_sector $mmcOLDp2_fdisk_end_sector
+"
+#varblkid LABEL
+#mmcOLDp1_id system-boot
+#mmcOLDp2_id writable
+#mmcOLDp1_type vfat
+#mmcOLDp1_uuid 57C2-A952
+#mmcOLD_id b6b5c3c7
+#mmcOLDp1_fdisk_type c
+}
+prpr_mmcNEW_fdisk(){
+fdisk ${mmcNEWp1:0:-1} <<EOF
+d
+
+d
+o
+x
+i
+0x$mmcOLD_id
+r
+n
+p
+1
+2048
+$mmcOLDp2_fdisk_end_sector
+y
+t
+c
+w
+EOF
+}
+prpr_mmcNEW_mkfs(){
+mkfs.$mmcOLDp1_type -F 32 -n "$mmcOLDp1_id" $mmcNEWp1
+printf "\x${mmcOLDp1_uuid:7:2}\x${mmcOLDp1_uuid:5:2}\x${mmcOLDp1_uuid:2:2}\x${mmcOLDp1_uuid:0:2}" \
+| dd bs=1 seek=67 count=4 conv=notrunc of=$mmcOLDp1
+sync
+#mkfs.ext4 -L "$mmcOLDp2_id" -U "$mmcOLDp2_uuid"
+}
+prpr_ssdP3_mkfs(){
+yes | mkfs.ext4 -L "$mmcOLDp2_id" -U "$mmcOLDp2_uuid" $ssdP3
+}
+start_cp(){
+cp -a $mount_point/mmcOLDp1/* $mount_point/mmcNEWp1
+sync
+cp -apr $mount_point/mmcOLDp2/* $mount_point/ssdP3
+cp -apr $mount_point/mmcOLDp2/.disk $mount_point/ssdP3
+sync
+sync
+}
+clean_all(){
+umountdev
+rmdirs
+}
+getinfo
+echo "FDISK"
+prpr_mmcNEW_fdisk
+echo "MKFS"
+prpr_mmcNEW_mkfs
+prpr_ssdP3_mkfs
+mkdirs
+mountdev
+start_cp
+clean_all
+echo "DONE"

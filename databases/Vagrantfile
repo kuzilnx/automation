@@ -1,0 +1,38 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+
+$script = <<-SCRIPT
+echo "Starting Provisioning..."
+sed -i 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+setenforce permissive
+sudo apt install mariadb-server
+
+SCRIPT
+
+$script2 = <<-SCRIPT2
+echo "Starting Provisioning..."
+sed -i 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+sudo apt install mariadb
+
+SCRIPT2
+
+Vagrant.configure("2") do |config|
+  config.vm.define "db" do |db|
+    db.vm.box="debian/buster64"
+    db.vm.hostname="db-server"
+    db.vm.network "private_network", ip: "172.32.10.10"
+    db.vm.provision "shell", inline: $script
+  end
+
+  config.vm.define "dbclient" do |dbc|
+    dbc.vm.box="debian/buster64"
+    dbc.vm.hostname="db-client"
+    dbc.vm.network "private_network", ip: "172.32.10.11"
+    dbc.vm.provision "shell", inline: $script2
+  end
+end

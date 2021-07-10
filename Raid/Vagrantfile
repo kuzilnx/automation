@@ -1,0 +1,22 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+
+  $script = <<-SCRIPT
+  echo "Starting Provisioning..."
+  apt install -y mdadm
+  SCRIPT
+
+
+  Vagrant.configure("2") do |config|
+     config.vm.define "raid" do |r|
+        r.vm.box="debian/buster64"
+        r.vm.hostname="raidserver"
+        r.vm.network "private_network", ip: "10.100.0.5"
+        r.vm.provision "shell", inline: $script
+      end
+end

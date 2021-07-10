@@ -1,0 +1,41 @@
+#!/bin/bash
+
+
+showMOTD(){
+local _date=$(date +"%d/%m/%Y-%H:%M")
+local msg="$@ $_date"
+# // add results to motd template check my git:motd
+echo "$msg" | sudo tee /etc/motd.d/${0##*/}.motd 1 > /dev/null
+}
+
+mkswapFile(){
+# // 16GB swapfile
+dd if=/dev/zero of=/share/pi-nfs/swapinho count=1 bs=1 seek=17179869183 #$((16 * 1024 * 1024 * 1024 - 1))
+sync
+if [[ -f /share/pi-nfs/swapinho ]]; then
+	chmod 0600 /share/pi-nfs/swapinho
+	mkswap -L "genswap" /share/pi-nfs/swapinho
+	losetup /dev/loop0 /share/pi-nfs/swapinho
+	sudo swapon /dev/loop0
+	chkSwap="$(swapon --show=LABEL --raw --noheadings)"
+		if [[ "$chkSwap" == "genswap"  ]]; then
+			showMOTD "swap on"
+		fi
+	exit 0
+else
+	showMOTD "NFSwap Couldn't complete"
+	exit 0
+fi
+}
+
+# // start delay for xdm to load other startup apps
+sleep 20
+
+sudo mount -a
+
+if [[ -f /share/pi-nfs/swapinho ]]; then
+	yes | rm /share/pi-nfs/swapinho
+	mkswapFile
+else
+	mkswapFile
+fi
