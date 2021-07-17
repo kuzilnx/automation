@@ -1,13 +1,15 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+#created by: Silent-Mobius
+
 $script= <<-SCRIPT
 sed -i s/SELINUX=enforcing/SELINUX=permissive/ /etc/selinux/config
-sudo apt-get install default-jdk
+apt  install -y default-jdk
 wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
 echo "deb https://pkg.jenkins.io/debian-stable binary/" > /etc/apt/sources.list.d/jenkins.list
-apt-get update
-apt-get install -y jenkins
+apt update
+apt install -y jenkins
 
 systemctl enable --now jenkins
 

@@ -1,5 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+
+#created by: Silent-Mobius
+
 FWD='
 $TTL 86400
 @    IN    SOA nameserver1.example.com root.example.com 10030  3600  1800  604800  86400

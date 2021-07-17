@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#created by: Kuzilnx
+
 mmcOLDp1="/dev/sdb1"
 mmcOLDp2="/dev/sdb2"
 #mmcOLDp3="/dev/sdb3"

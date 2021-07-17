@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#created by: Kuzilnx
+
 main(){
 logger sourced sh script
 sleep 15

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+#created by: Kuzilnx
+
 bid=$$
 sudo cat /root/.bashrc > /dev/null 2>&1
 for i in 1 2 3; do

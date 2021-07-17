@@ -1,4 +1,7 @@
 #!/bin/bash
+
+#created by: Kuzilnx
+
 spinner() {
     local i sp n
     sp='/-\|'

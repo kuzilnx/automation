@@ -1,4 +1,5 @@
 #!/bin/bash
+#created by: Kuzilnx
 RTIP="192.168.1.1"
 PIIP="192.168.1.2"
 sftab(){

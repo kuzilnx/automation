@@ -1,10 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
+#created by: Silent-Mobius
 
 $script = <<-SCRIPT
 echo "starting ansible provisioning"
@@ -13,7 +10,7 @@ echo "10.0.200.112  dbubuntu" >> /etc/hosts
 echo "10.0.200.100  web" >> /etc/hosts
 echo "10.0.200.101  webubuntu" >> /etc/hosts
 
-yum install -y ansible
+apt install -y ansible
 yes | ssh-keygen -b 2048 -t rsa -f /home/vagrant/.ssh/id_rsa -q -N ""
 
 echo
