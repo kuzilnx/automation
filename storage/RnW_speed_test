@@ -33,18 +33,18 @@ echo "done"
 done
 rm tempfile
 
+calc(){ awk "BEGIN { print "$*" }"; }
 y=3
 w="write"
 r="read"
 rs="read seq"
-for i in test_results test_results_nfs; do
+for i in test_results; do
 x=$(cat $i | grep write | cut -d "," -f4 | awk '{print $1}' | paste -sd+ | bc)
 var=$(calc $x/$y)
 echo "$i test $w speed average is $var GB/s"
 x=$(cat $i | grep 'read seq'| cut -d "," -f4 | awk '{print $1}' | paste -sd+ | bc)
 var=$(calc $x/$y)
 echo "$i test $rs speed average is $var GB/s"
-#while IFS= read -r line; do echo $line; done
 x=$(cat $i | grep read: | cut -d "," -f4 | awk '{print $1}' | paste -sd+ | bc)
 var=$(calc $x/$y)
 echo "$i test $r speed average is $var GB/s"
